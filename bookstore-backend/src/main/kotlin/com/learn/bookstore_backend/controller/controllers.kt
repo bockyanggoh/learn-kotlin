@@ -12,7 +12,7 @@ class UserController (
         private val userService: UserService
         ) {
     @GetMapping("/{username}")
-    fun getUserName(@PathVariable username: String): ResponseEntity<UserEntity> {
+    fun getUserName(@PathVariable username: String): ResponseEntity<UserResponse> {
         return try {
             val user = userService.getUser(username)
             ResponseEntity.ok(user)
@@ -40,6 +40,5 @@ class UserController (
         } catch (e: Exception) {
             ResponseEntity.notFound().build()
         }
-
     }
 }

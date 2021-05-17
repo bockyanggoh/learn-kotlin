@@ -20,11 +20,15 @@ class UserService @Autowired constructor(
     }
 
 
-    fun getUser(username: String): UserEntity {
+    fun getUser(username: String): UserResponse {
         val res = repository.findUserEntityByUsername(username)
         if (res != null)
-            return res
-
+            return (UserResponse(
+                    userId = res.id,
+                    username = res.username,
+                    createdTs = res.createdTs.toString(),
+                    activated = res.activated
+            ))
         throw Exception("Id not found")
     }
 
