@@ -1,6 +1,4 @@
 package com.learn.bookstore_backend.controller
-
-import com.learn.bookstore_backend.database.repository.UserEntity
 import com.learn.bookstore_backend.service.UserService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
