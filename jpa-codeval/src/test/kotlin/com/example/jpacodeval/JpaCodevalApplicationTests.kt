@@ -11,6 +11,7 @@ import javax.transaction.Transactional
 @SpringBootTest
 class JpaCodevalApplicationTests(
     @Autowired val codeValueDatabaseService: CodeValueDatabaseService,
+    @Autowired val codeValueService: CodeValueService,
     @Autowired val codeValueDb: CodeValueRepo,
     @Autowired val codeTypeDb: CodeTypeRepo
 ) {
@@ -45,6 +46,7 @@ class JpaCodevalApplicationTests(
         }
     }
 
+
     @Test
     @Transactional
     internal fun `GivenNoCodeTypeAndCodeValueInDB, WhenInserting3CodeValueAnd1CodeType, It Should Succeed`() {
@@ -61,14 +63,14 @@ class JpaCodevalApplicationTests(
 
     }
 
-//    @Test
-//    @Transactional
-//    internal fun `GivenNoCodeTypeAndCodeValueInDB, WhenInsertingDuplicatedCodeValueAnd1CodeType, It Should Fail`() {
-//        val range = arrayListOf(CodeValueEnum.CATEGORY_ATM, CodeValueEnum.STATUS_FAIL, CodeValueEnum.STATUS_FAIL)
-//        val x = codeValueDatabaseService.idempotent(CodeTypeEnum.CATEGORY, range)
-//        val retrieved = codeValueDb.findCodeValuesByCodeType_NameAndNameIn(CodeTypeEnum.CATEGORY, range)
-//        assertEquals("It should be equal", x?.size, retrieved?.size?.minus(1))
-//    }
+    @Test
+    internal fun `GivenNoCodeTypeAndCodeValueInDB, WhenInsertingDuplicatedCodeValueAnd1CodeType, It Should Fail`() {
+        val range = arrayListOf(CodeValueEnum.CATEGORY_ATM, CodeValueEnum.STATUS_FAIL, CodeValueEnum.STATUS_FAIL)
+//        codeValueDatabaseService.idempotent(CodeTypeEnum.CATEGORY, range)
+        codeValueService.idempotent(CodeTypeEnum.CATEGORY, range)
+//        val retrieved = codeValueDb.findCodeValuesByCodeType_NameAndNameIn(CodeTypeEnum.CATEGORY, arrayListOf(CodeValueEnum.CATEGORY_ATM, CodeValueEnum.STATUS_FAIL))
+//        assertEquals("It should be equal", retrieved?.size, 2)
+    }
 
     @Test
     @Transactional

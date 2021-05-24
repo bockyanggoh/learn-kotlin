@@ -2,16 +2,12 @@ package com.example.jpacodeval
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.boot.runApplication
-import org.springframework.context.event.EventListener
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import org.springframework.stereotype.Service
 import java.util.stream.Collectors
-import java.util.stream.Stream
-import javax.annotation.PostConstruct
 import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -67,6 +63,32 @@ interface CodeValueRepo: JpaRepository<CodeValue, String> {
 
 }
 
+@Service
+class CodeValueService(
+    @Autowired val codeValueDatabaseService: CodeValueDatabaseService
+) {
+
+    @Transactional
+    fun idempotent(type: CodeTypeEnum, value: CodeValueEnum): CodeValueData? {
+        val retrieved = codeValueDatabaseService.idempotent(type, value)
+        if (retrieved != null) {
+            return CodeValueData(id = retrieved.id!!, name = retrieved.name)
+        }
+        return null
+    }
+
+    @Transactional
+    fun idempotent(type: CodeTypeEnum, value: List<CodeValueEnum>): List<CodeValueData> {
+        val retrieved = codeValueDatabaseService.idempotent(type, value)
+        if (retrieved != null) {
+            val list = ArrayList<CodeValueData>()
+            for (x in retrieved) {
+                list.add(CodeValueData(id = x.id!!, name = x.name))
+            }
+        }
+        return ArrayList()
+    }
+}
 
 @Service
 class CodeValueDatabaseService(
@@ -74,7 +96,7 @@ class CodeValueDatabaseService(
     @Autowired val codeValueRepo: CodeValueRepo,
 ) {
     @Transactional
-    fun idempotent(type: CodeTypeEnum, value: CodeValueEnum): CodeValue {
+    fun idempotent(type: CodeTypeEnum, value: CodeValueEnum): CodeValue? {
         val retrieved = codeValueRepo.findCodeValueByCodeType_NameAndName(type, value)
         if (retrieved != null) {
             return retrieved
@@ -104,7 +126,11 @@ class CodeValueDatabaseService(
                 for (s in subset) {
                     codeTypeRetrieved.codeValues.add(CodeValue(codeType = codeTypeRetrieved, name = s))
                 }
-                codeTypeRepo.save(codeTypeRetrieved)
+                try {
+                    codeTypeRepo.saveAndFlush(codeTypeRetrieved)
+                } catch (e: DataIntegrityViolationException) {
+                    throw IllogicalDatabaseUpdateException(message = e.message)
+                }
 
                 return codeTypeRetrieved.codeValues.toList()
             }
@@ -114,7 +140,11 @@ class CodeValueDatabaseService(
             for(x in subset) {
                 codeTypeRetrieved.codeValues.add(CodeValue(codeType = codeTypeRetrieved, name = x))
             }
-            codeTypeRepo.save(codeTypeRetrieved)
+            try {
+                codeTypeRepo.saveAndFlush(codeTypeRetrieved)
+            } catch (e: DataIntegrityViolationException) {
+                throw IllogicalDatabaseUpdateException(message = e.message)
+            }
             return codeTypeRetrieved.codeValues
 
         }
@@ -138,3 +168,18 @@ enum class CodeValueEnum(
 }
 
 
+class IllogicalDatabaseUpdateException(
+    override val message: String?
+): Exception() {
+}
+
+data class CodeTypeData (
+    val id: Long,
+    val name: String,
+    val values: List<CodeValueData> = ArrayList()
+)
+
+data class CodeValueData (
+    val id: Long,
+    val name: CodeValueEnum
+)
