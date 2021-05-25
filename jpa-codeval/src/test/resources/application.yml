@@ -1,0 +1,15 @@
+server:
+  port: 1234
+spring:
+  config:
+    activate:
+      on-profile: test
+  h2:
+    console:
+      path: /h2
+      enabled: true
+  jpa:
+    show-sql: true
+    open-in-view: false
+  liquibase:
+    enabled: false

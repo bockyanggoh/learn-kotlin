@@ -19,6 +19,7 @@ import javax.persistence.Id
 import javax.persistence.JoinColumn
 import javax.persistence.ManyToOne
 import javax.persistence.OneToMany
+import javax.persistence.Table
 import javax.transaction.Transactional
 
 @SpringBootApplication
@@ -30,16 +31,18 @@ fun main(args: Array<String>) {
 }
 
 @Entity
+@Table(name="code_type")
 class CodeType(
     @Id @GeneratedValue(strategy = GenerationType.AUTO) var id: Long? = null,
     @Enumerated(value = EnumType.STRING)
     @Column(unique = true)
-    var name: CodeTypeEnum,
+    var name: CodeTypeEnum?,
     @OneToMany(mappedBy = "codeType", cascade = [CascadeType.ALL], orphanRemoval = true)
     var codeValues: MutableList<CodeValue> = ArrayList()
 )
 
 @Entity
+@Table(name="code_value")
 class CodeValue(
     @Id @GeneratedValue(strategy = GenerationType.AUTO) var id: Long? = null,
     @ManyToOne
@@ -170,6 +173,7 @@ enum class CodeValueEnum(
 
 class IllogicalDatabaseUpdateException(
     override val message: String?
+
 ): Exception() {
 }
 

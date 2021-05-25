@@ -1,14 +1,18 @@
 package com.example.jpacodeval
 
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.util.AssertionErrors.assertEquals
+import java.lang.AssertionError
 import java.lang.Exception
 import javax.transaction.Transactional
 
 @SpringBootTest
+@ActiveProfiles("test")
 class JpaCodevalApplicationTests(
     @Autowired val codeValueDatabaseService: CodeValueDatabaseService,
     @Autowired val codeValueService: CodeValueService,
@@ -65,11 +69,10 @@ class JpaCodevalApplicationTests(
 
     @Test
     internal fun `GivenNoCodeTypeAndCodeValueInDB, WhenInsertingDuplicatedCodeValueAnd1CodeType, It Should Fail`() {
-        val range = arrayListOf(CodeValueEnum.CATEGORY_ATM, CodeValueEnum.STATUS_FAIL, CodeValueEnum.STATUS_FAIL)
-//        codeValueDatabaseService.idempotent(CodeTypeEnum.CATEGORY, range)
-        codeValueService.idempotent(CodeTypeEnum.CATEGORY, range)
-//        val retrieved = codeValueDb.findCodeValuesByCodeType_NameAndNameIn(CodeTypeEnum.CATEGORY, arrayListOf(CodeValueEnum.CATEGORY_ATM, CodeValueEnum.STATUS_FAIL))
-//        assertEquals("It should be equal", retrieved?.size, 2)
+        Assertions.assertThrows(IllogicalDatabaseUpdateException::class.java) {
+            val range = arrayListOf(CodeValueEnum.CATEGORY_ATM, CodeValueEnum.STATUS_FAIL, CodeValueEnum.STATUS_FAIL)
+            codeValueService.idempotent(CodeTypeEnum.CATEGORY, range)
+        }
     }
 
     @Test
