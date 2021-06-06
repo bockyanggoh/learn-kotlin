@@ -60,17 +60,18 @@ interface CodeValueRepo: JpaRepository<CodeValue, String> {
 
     fun findCodeValueByCodeType_NameAndName(type: CodeTypeEnum, value: CodeValueEnum): CodeValue?
     fun findCodeValuesByCodeType_NameAndNameIn(type: CodeTypeEnum, value: List<CodeValueEnum>): List<CodeValue>?
-
 }
 
 @Service
-class CodeValueService(
-    @Autowired val codeValueDatabaseService: CodeValueDatabaseService
+class CodeValueDatabaseService(
+    @Autowired val codeValueRepo: CodeValueRepo,
+    @Autowired val codeTypeRepo: CodeTypeRepo,
 ) {
 
     @Transactional
     fun idempotent(type: CodeTypeEnum, value: CodeValueEnum): CodeValueData? {
-        val retrieved = codeValueDatabaseService.idempotent(type, value)
+        val retrieved = this.idempotentInternal(type, value)
+
         if (retrieved != null) {
             return CodeValueData(id = retrieved.id!!, name = retrieved.name)
         }
@@ -79,7 +80,7 @@ class CodeValueService(
 
     @Transactional
     fun idempotent(type: CodeTypeEnum, value: List<CodeValueEnum>): List<CodeValueData> {
-        val retrieved = codeValueDatabaseService.idempotent(type, value)
+        val retrieved = this.idempotentInternal(type, value)
         if (retrieved != null) {
             val list = ArrayList<CodeValueData>()
             for (x in retrieved) {
@@ -88,15 +89,9 @@ class CodeValueService(
         }
         return ArrayList()
     }
-}
 
-@Service
-class CodeValueDatabaseService(
-    @Autowired val codeTypeRepo: CodeTypeRepo,
-    @Autowired val codeValueRepo: CodeValueRepo,
-) {
     @Transactional
-    fun idempotent(type: CodeTypeEnum, value: CodeValueEnum): CodeValue? {
+    internal fun idempotentInternal(type: CodeTypeEnum, value: CodeValueEnum): CodeValue? {
         val retrieved = codeValueRepo.findCodeValueByCodeType_NameAndName(type, value)
         if (retrieved != null) {
             return retrieved
@@ -113,7 +108,7 @@ class CodeValueDatabaseService(
     }
 
     @Transactional
-    fun idempotent(type: CodeTypeEnum, values: List<CodeValueEnum>): List<CodeValue>? {
+    internal fun idempotentInternal(type: CodeTypeEnum, values: List<CodeValueEnum>): List<CodeValue>? {
         val retrieved = codeValueRepo.findCodeValuesByCodeType_NameAndNameIn(type, values.toList())
         if (retrieved != null) {
             val remapped: List<CodeValueEnum> = retrieved.stream().map { it.name }.collect(Collectors.toList())
@@ -179,7 +174,7 @@ data class CodeTypeData (
     val values: List<CodeValueData> = ArrayList()
 )
 
-data class CodeValueData (
+data class CodeValueData(
     val id: Long,
     val name: CodeValueEnum
 )

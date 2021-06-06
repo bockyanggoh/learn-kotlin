@@ -11,7 +11,6 @@ import javax.transaction.Transactional
 @SpringBootTest
 class JpaCodevalApplicationTests(
     @Autowired val codeValueDatabaseService: CodeValueDatabaseService,
-    @Autowired val codeValueService: CodeValueService,
     @Autowired val codeValueDb: CodeValueRepo,
     @Autowired val codeTypeDb: CodeTypeRepo
 ) {
@@ -67,7 +66,7 @@ class JpaCodevalApplicationTests(
     internal fun `GivenNoCodeTypeAndCodeValueInDB, WhenInsertingDuplicatedCodeValueAnd1CodeType, It Should Fail`() {
         val range = arrayListOf(CodeValueEnum.CATEGORY_ATM, CodeValueEnum.STATUS_FAIL, CodeValueEnum.STATUS_FAIL)
 //        codeValueDatabaseService.idempotent(CodeTypeEnum.CATEGORY, range)
-        codeValueService.idempotent(CodeTypeEnum.CATEGORY, range)
+        codeValueDatabaseService.idempotent(CodeTypeEnum.CATEGORY, range)
 //        val retrieved = codeValueDb.findCodeValuesByCodeType_NameAndNameIn(CodeTypeEnum.CATEGORY, arrayListOf(CodeValueEnum.CATEGORY_ATM, CodeValueEnum.STATUS_FAIL))
 //        assertEquals("It should be equal", retrieved?.size, 2)
     }
@@ -77,7 +76,7 @@ class JpaCodevalApplicationTests(
     internal fun `Given1CodeTypeAnd3CodeValueInDB, WhenInsertingNoNewCodeValueAndNoNewCodeType, It Should not Insert anything`() {
         val range = arrayListOf(CodeValueEnum.STATUS_SUCCESS, CodeValueEnum.STATUS_FAIL, CodeValueEnum.STATUS_PENDING)
         val x = codeValueDatabaseService.idempotent(CodeTypeEnum.CATEGORY, range)
-        val repeated = codeValueDatabaseService.idempotent(CodeTypeEnum.CATEGORY, range)
+        val repeated = codeValueDatabaseService.idempotent(Co`deTypeEnum.CATEGORY, range)
         val retrieved = codeValueDb.findCodeValuesByCodeType_NameAndNameIn(CodeTypeEnum.CATEGORY, range)
         assertEquals("It should be equal", x?.size, retrieved?.size)
     }
