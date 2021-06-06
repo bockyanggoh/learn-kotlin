@@ -5,5 +5,12 @@
       "name": "One",
       "dateTs": "2020-01-01 10:00:00"
     }
+  ],
+  "epoch": [
+    {
+      "id": 1,
+      "name": "One Epoch",
+      "dateEpoch": 1622973090
+    }
   ]
 }

@@ -1,5 +1,6 @@
 package com.example.serialization
 
+import com.example.serialization.models.SimpleResponse
 import mu.KotlinLogging
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test

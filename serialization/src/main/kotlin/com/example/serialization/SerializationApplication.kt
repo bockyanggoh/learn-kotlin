@@ -1,6 +1,14 @@
 package com.example.serialization
 
+import com.example.serialization.models.ErrorResponse
+import com.example.serialization.models.SimpleResponse
+import com.example.serialization.serializers.EpochDateSerializer
+import com.example.serialization.serializers.UniversalLocalDateTimeSerializer
+import com.example.serialization.services.SimpleService
+import com.example.serialization.utils.SystemConstants
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import mu.KotlinLogging
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
@@ -8,9 +16,13 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.json.KotlinSerializationJsonHttpMessageConverter
 import org.springframework.stereotype.Component
+import org.springframework.web.bind.annotation.ControllerAdvice
+import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.client.RestTemplate
 import java.lang.Exception
 import java.time.LocalDateTime
@@ -23,13 +35,6 @@ fun main(args: Array<String>) {
     runApplication<SerializationApplication>(*args)
 }
 
-@Configuration
-class AppConfig {
-    @Bean
-    fun restTemplate(): RestTemplate {
-        return RestTemplate(listOf(KotlinSerializationJsonHttpMessageConverter()))
-    }
-}
 
 @Component
 @RestController
@@ -38,46 +43,31 @@ class ApiController(
 ) {
 
     @GetMapping("/simple/{id}")
-    fun getSimpleApi(@PathVariable id: Int): ResponseEntity<SimpleResponse> {
-        val response = service.getRecord(1)
-        return ResponseEntity.ok(response)
-    }
-}
-
-@Component
-class SimpleService(
-    private val restTemplate: RestTemplate
-) {
-    fun getRecord(id: Int): SimpleResponse {
-        try {
-            val response = restTemplate.getForEntity(
-                "${Constants.baseUrl}/simple/$id",
-                SimpleResponse::class.java
-            )
-            if (response.body != null)
-                response.body
-            throw Exception("lalala")
-        } catch (e: Exception) {
-            throw Exception("lalala")
+    fun getSimpleApi(@PathVariable id: Int, @RequestParam type: String): ResponseEntity<SimpleResponse> {
+        if (type.equals("epoch", ignoreCase = true)) {
+            val response = service.getEpochRecord(id)
+            return ResponseEntity.ok(response)
         }
+        else if(type.equals("date", ignoreCase = true)) {
+            val response = service.getRecord(id)
+            return ResponseEntity.ok(response)
+        }
+        throw InvalidInputException(message = "Invalid parameter [type] given. Please only use the following values [epoch|date]")
     }
 }
 
-@Serializable
-data class SimpleRequest(
-    val id: Int,
-    val name: String,
-    val dateTs: String? = LocalDateTime.now().format(Constants.dateFormat)
-)
+@RestControllerAdvice
+class CommonExceptionHandler() {
+    @ExceptionHandler(value = [
+        InvalidInputException::class
+    ])
+    fun invalidInputResponse(exception: InvalidInputException): ErrorResponse {
+        return ErrorResponse(message = exception.message)
+    }
 
-@Serializable
-data class SimpleResponse(
-    val id: Int,
-    val name: String,
-    val dateTs: String
-)
+}
 
-object Constants {
-        final val dateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-        final val baseUrl: String = "http://localhost:3000"
+class InvalidInputException(
+    message: String
+): Exception(message) {
 }
