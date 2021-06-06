@@ -6,14 +6,18 @@ import com.example.serialization.serializers.UniversalLocalDateTimeSerializer
 import com.example.serialization.utils.SystemConstants
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.jetbrains.annotations.NotNull
 import java.time.LocalDateTime
 import java.util.*
 
 @Serializable
 data class SimpleRequest(
+    @field:NotNull
     val id: Int,
+    @field:NotNull
     val name: String,
-    val dateTs: String? = LocalDateTime.now().format(SystemConstants.dateFormat)
+    @Serializable(with = UniversalLocalDateTimeSerializer::class)
+    val dateTs: LocalDateTime
 )
 
 @Serializable
@@ -21,6 +25,15 @@ data class SimpleResponse(
     val id: Int,
     val name: String,
     @Serializable(with = UniversalLocalDateTimeSerializer::class)
+    val dateTs: LocalDateTime
+)
+
+@Serializable
+data class EpochRequest(
+    val id: Int,
+    val name: String,
+    @Serializable(with = EpochDateSerializer::class)
+    @SerialName("dateEpoch")
     val dateTs: LocalDateTime
 )
 
