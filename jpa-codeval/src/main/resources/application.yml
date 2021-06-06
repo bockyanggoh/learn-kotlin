@@ -1,11 +1,48 @@
-server:
-  port: 1234
 
+---
 spring:
-  h2:
-    console:
-      path: /h2
-      enabled: true
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    username: root
+    password: root
+    url: jdbc:mariadb://localhost:3306/code_type_db
   jpa:
+    hibernate:
+      ddl-auto: create-drop
     show-sql: true
+<<<<<<< HEAD
     open-in-view: false
+=======
+    open-in-view: false
+  liquibase:
+    enabled: false
+---
+spring:
+  config:
+    activate:
+      on-profile: qa
+  liquibase:
+    database-change-log-table: CHANGELOG
+    enabled: true
+    user: root
+    password: root
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://localhost:3306/code_type_db
+    change-log: classpath:liquibase-changeLog.xml
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    username: root
+    password: root
+    url: jdbc:mariadb://localhost:3306/code_type_db
+---
+spring:
+  config:
+    activate:
+      on-profile: database
+
+
+---
+>>>>>>> 8da6d50fa7c9173de8a8be71d3cb2d323c28e55b

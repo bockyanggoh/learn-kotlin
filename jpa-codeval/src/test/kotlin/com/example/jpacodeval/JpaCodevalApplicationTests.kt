@@ -1,14 +1,18 @@
 package com.example.jpacodeval
 
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.util.AssertionErrors.assertEquals
+import java.lang.AssertionError
 import java.lang.Exception
 import javax.transaction.Transactional
 
 @SpringBootTest
+@ActiveProfiles("test")
 class JpaCodevalApplicationTests(
     @Autowired val codeValueDatabaseService: CodeValueDatabaseService,
     @Autowired val codeValueDb: CodeValueRepo,
@@ -76,7 +80,7 @@ class JpaCodevalApplicationTests(
     internal fun `Given1CodeTypeAnd3CodeValueInDB, WhenInsertingNoNewCodeValueAndNoNewCodeType, It Should not Insert anything`() {
         val range = arrayListOf(CodeValueEnum.STATUS_SUCCESS, CodeValueEnum.STATUS_FAIL, CodeValueEnum.STATUS_PENDING)
         val x = codeValueDatabaseService.idempotent(CodeTypeEnum.CATEGORY, range)
-        val repeated = codeValueDatabaseService.idempotent(Co`deTypeEnum.CATEGORY, range)
+        val repeated = codeValueDatabaseService.idempotent(CodeTypeEnum.CATEGORY, range)
         val retrieved = codeValueDb.findCodeValuesByCodeType_NameAndNameIn(CodeTypeEnum.CATEGORY, range)
         assertEquals("It should be equal", x?.size, retrieved?.size)
     }
