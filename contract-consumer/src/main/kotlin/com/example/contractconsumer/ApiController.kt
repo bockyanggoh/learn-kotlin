@@ -37,8 +37,8 @@ class ApiController {
         val generatedId = UUID.randomUUID().toString()
         val record = ApiResponse(
             id = generatedId,
-            name = request.name,
-            value1 = request.value1,
+            name = request.name!!,
+            value1 = request.value1!!,
             value2 = request.name + request.value1
         )
         data[generatedId] = record
@@ -50,9 +50,9 @@ class ApiController {
 data class ApiRequest(
     @field:NotNull
     @field:Size(min = 4, max = 50)
-    val name: String,
+    val name: String?,
     @field:NotNull
-    val value1: String,
+    val value1: String?,
 )
 
 @Serializable
