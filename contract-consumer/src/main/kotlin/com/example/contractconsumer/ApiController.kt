@@ -1,49 +1,72 @@
 package com.example.contractconsumer
 
-import au.com.dius.pact.core.model.annotations.Pact
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpEntity
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.json.KotlinSerializationJsonHttpMessageConverter
+import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.client.RestTemplate
 import java.lang.Exception
-import java.util.*
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import javax.validation.Valid
 import javax.validation.constraints.NotNull
 import javax.validation.constraints.Size
-import kotlin.collections.HashMap
 
 @RestController
 @RequestMapping("/api/v1")
-class ApiController {
-    companion object {
-        val data: MutableMap<String, ApiResponse> = HashMap()
-    }
+class ApiController(
+    val restTemplate: RestTemplate,
+    @Value("\${application.remote.createApi}") val createApiUrl: String,
+    @Value("\${application.remote.getApi}") val getApiUrl: String
+
+) {
 
     @GetMapping("/{id}")
     fun getApiResponse(@PathVariable id: String): ResponseEntity<ApiResponse> {
-        val retrieved = data.get(id)
-        if (retrieved != null) {
-            return ResponseEntity.ok(retrieved)
-        }
-        throw NoRecordFound("Requested record [${id}] not found")
+        val headers = HttpHeaders()
+        val response = restTemplate.exchange(
+            "${getApiUrl}/${id}",
+            HttpMethod.GET,
+            HttpEntity(null, headers),
+            ApiResponse::class.java
+        )
+        return response
     }
 
     @PostMapping
     fun createApiResponse(@Valid @RequestBody request: ApiRequest): ResponseEntity<ApiResponse> {
-        val generatedId = UUID.randomUUID().toString()
-        val record = ApiResponse(
-            id = generatedId,
-            name = request.name!!,
-            value1 = request.value1!!,
-            value2 = request.name + request.value1
+        val headers = HttpHeaders()
+        val response = restTemplate.exchange(
+            createApiUrl,
+            HttpMethod.POST,
+            HttpEntity(request, headers),
+            ApiResponse::class.java
         )
-        data[generatedId] = record
-        return ResponseEntity.ok(record)
+        return response
     }
+
+
 }
 
 @Serializable
@@ -61,9 +84,64 @@ data class ApiResponse(
     val name: String,
     val value1: String,
     val value2: String
+) {
+
+}
+
+@Serializable
+data class ErrorResponse(
+    val id: String,
+    @Serializable(with = DateTimeSerializer::class)
+    val transactionTs: LocalDateTime = LocalDateTime.now(),
+    val errorCode: String,
+    val errorDescription: String
 )
 
+@RestControllerAdvice
+class ErrorController {
+
+    @ExceptionHandler(value = [NoRecordFound::class])
+    fun handleError(error: NoRecordFound): ResponseEntity<ErrorResponse> {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+            ErrorResponse(
+                id = error.id,
+                errorCode = error.errorCode!!,
+                errorDescription = error.message!!
+            )
+        )
+    }
+}
 
 class NoRecordFound(
+    val id: String,
+    val errorCode: String? = NoRecordFound::class.simpleName,
     message: String?
 ): Exception(message)
+
+@Configuration
+class AppConfig {
+    @Bean
+    fun restTemplate(): RestTemplate {
+        return RestTemplate(
+            listOf(
+                KotlinSerializationJsonHttpMessageConverter()
+            )
+        )
+    }
+}
+
+object DateTimeSerializer: KSerializer<LocalDateTime> {
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    override val descriptor: SerialDescriptor
+        get() = PrimitiveSerialDescriptor("LocalDateTime", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder): LocalDateTime {
+        val dateValue = decoder.decodeString()
+        return LocalDateTime.parse(dateValue, formatter)
+    }
+
+    override fun serialize(encoder: Encoder, value: LocalDateTime) {
+        val dateValue = value.format(formatter)
+        encoder.encodeString(dateValue)
+    }
+}

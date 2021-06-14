@@ -1,0 +1,8 @@
+server:
+  port: 8080
+
+application:
+  remote:
+    baseUrl: 'https://someurl.com'
+    createApi: '${application.remote.baseUrl}/api/v1'
+    getApi: '${application.remote.baseUrl}/api/v1'
